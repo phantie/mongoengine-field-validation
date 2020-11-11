@@ -9,10 +9,7 @@ class ValidatorMeta(type):
             self.m = m
 
         def __call__(self, *args, **kwargs):
-            try:
-                if not self.f(*args, **kwargs):
-                    raise AssertionError
-            except AssertionError:
+            if not self.f(*args, **kwargs):
                 raise ValidationError(self.m)
 
     def __new__(cls, name, bases, attrs):
