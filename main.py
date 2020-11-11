@@ -1,6 +1,6 @@
 from mongoengine import ValidationError
 
-__all__ = ('Validator', 'CombinedValidator', 'OR')
+__all__ = ('Validator', 'AND', 'OR')
 
 class ValidatorMeta(type):
     class Wrap:
@@ -29,8 +29,9 @@ class Validator(metaclass=ValidatorMeta):
 class ValidatorStore:
     def __init__(self, *validators):
         self.validators = validators
+        self.m = ' and '.join(v.m for v in validators)
 
-class CombinedValidator(ValidatorStore):
+class AND(ValidatorStore):
     def __call__(self, value):
         for v in self.validators:
             v(value)
@@ -42,7 +43,7 @@ class OR(ValidatorStore):
     def condition(self, value):
         for v in self.validators:
             try:
-                v.condition(value)
+                v(value)
             except AssertionError:
                 pass
             else:
