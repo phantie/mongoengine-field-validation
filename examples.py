@@ -30,8 +30,6 @@ class AlphaNumericValidator(Validator):
     m: 'Special symbols not allowed'
     condition = lambda value: value.isalnum()
 
-StringTypeValidator = TypeValidator(str)
-
 class OnlyNumbers(Validator):
     m: 'Use only numbers'
     condition = lambda value: all(i.isdigit() for i in value)
@@ -39,6 +37,9 @@ class OnlyNumbers(Validator):
 class OnlyAa(Validator):
     m: 'Use only `A` and `a` symbols'
     condition = lambda value: all(i.lower() == 'a' for i in value)
+
+
+StringTypeValidator = TypeValidator(str)
 
 class Validation:
     nickname = AND(
@@ -87,7 +88,6 @@ class Validation:
         )
 
 
-
 class User(Document):
     nickname = StringField(validation=Validation.nickname)
     name = StringField(validation=Validation.name)
@@ -97,9 +97,10 @@ class User(Document):
     
     advanced_example = StringField(validation=Validation.strange_creature)
 
+
 User(
     nickname='phantie',
     name='Alex',
     city='Odessa',
     
-    advanced_example = '21356').validate()
+    advanced_example = '123').validate()

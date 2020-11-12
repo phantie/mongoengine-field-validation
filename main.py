@@ -1,4 +1,5 @@
 from mongoengine import ValidationError
+from contextlib import suppress
 
 __all__ = ('Validator', 'AND', 'OR')
 
@@ -13,18 +14,13 @@ class ValidatorMeta(type):
                 raise ValidationError(self.m)
 
     def __new__(cls, name, bases, attrs):
-        attrs['m'] = attrs['__annotations__']['m']
-        attrs['condition'] = cls.Wrap(attrs['condition'], attrs['m'])
+        attrs['m'] = attrs.get('__annotations__', {}).get('m', '')
+        attrs['condition'] = cls.Wrap(attrs.get('condition', None), attrs['m'])
         return super().__new__(cls, name, bases, attrs)
 
 class Validator(metaclass=ValidatorMeta):
-    m: ''
-
     def __new__(cls, value):
         return cls.condition(value)
-
-    def condition(value):
-        raise Exception('Redefine this method in subclasses')
 
 class ValidatorStore:
     def __init__(self, *validators):
@@ -38,15 +34,9 @@ class AND(ValidatorStore):
 
 class OR(ValidatorStore):
     def __call__(self, value):
-        return self.condition(value)
-
-    def condition(self, value):
         for v in self.validators:
-            try:
+            with suppress(AssertionError):
                 v(value)
-            except AssertionError:
-                pass
-            else:
                 return
         else:
             raise ValidationError(f'{" or ".join(v.m for v in self.validators)}')
