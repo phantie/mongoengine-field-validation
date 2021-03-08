@@ -71,6 +71,14 @@ class Validation:
 
     city = country
 
+#     city = (
+#         StringTypeValidator &
+#         LengthValidator(24) &
+#         NoNumbersValidator &
+#             (TitledValidator | CapitalizedValidator) &
+#         AlphaNumericValidator
+# )
+
     strange_creature = \
         AND(
             StringTypeValidator,
@@ -103,4 +111,4 @@ User(
     name='Alex',
     city='Odessa',
     
-    advanced_example = '123').validate()
+    advanced_example = '121231233').validate()
