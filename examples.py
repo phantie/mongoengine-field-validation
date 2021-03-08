@@ -1,5 +1,8 @@
-from main import *
+from main import Validator
+
 from mongoengine import Document, StringField
+
+
 
 def TypeValidator(_type):
     class TypeValidator(Validator):
@@ -41,59 +44,41 @@ class OnlyAa(Validator):
 
 StringTypeValidator = TypeValidator(str)
 
+
+
+
 class Validation:
-    nickname = AND(
-        StringTypeValidator,
-        LengthValidator(21),
-        AlphaNumericValidator,
+    nickname = (
+        StringTypeValidator &
+        LengthValidator(21) &
+        AlphaNumericValidator
     )
 
-    name = AND(
-        StringTypeValidator,
-        LengthValidator(24),
-        NoNumbersValidator,
-        TitledValidator,
-        AlphaNumericValidator,
+    name = (
+        StringTypeValidator &
+        LengthValidator(24) &
+        NoNumbersValidator &
+        TitledValidator &
+        AlphaNumericValidator
     )
 
     surname = name
 
-    country = AND(
-        StringTypeValidator,
-        LengthValidator(24),
-        NoNumbersValidator,
-        OR(
-            TitledValidator,
-            CapitalizedValidator,
-        ),
-        AlphaNumericValidator,
+    country = (
+        StringTypeValidator &
+        LengthValidator(24) &
+        NoNumbersValidator &
+        (TitledValidator | CapitalizedValidator) &
+        AlphaNumericValidator
     )
 
     city = country
 
-#     city = (
-#         StringTypeValidator &
-#         LengthValidator(24) &
-#         NoNumbersValidator &
-#             (TitledValidator | CapitalizedValidator) &
-#         AlphaNumericValidator
-# )
-
-    strange_creature = \
-        AND(
-            StringTypeValidator,
-            OR (
-                AND (
-                    OnlyNumbers,
-                    LengthValidator(min_len=2, max_len=4),
-                ), 
-                AND (
-                    OnlyAa,
-                    LengthValidator(10),
-                ), 
-            
-            )
-        )
+    strange_creature = (
+            StringTypeValidator &
+            (
+                (OnlyNumbers & LengthValidator(min_len=2, max_len=4)) |
+                (OnlyAa & LengthValidator(10))))
 
 
 class User(Document):
@@ -110,5 +95,5 @@ User(
     nickname='phantie',
     name='Alex',
     city='Odessa',
-    
-    advanced_example = '121231233').validate()
+
+    advanced_example = '123').validate()

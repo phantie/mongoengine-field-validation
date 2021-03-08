@@ -1,43 +1,60 @@
-from mongoengine import ValidationError
+from __future__ import annotations
+from types import MethodType
+from copy import copy
 
-__all__ = ('Validator', 'AND', 'OR')
+import mongoengine as me
+
+ValidationError = me.ValidationError
+
+__all__ = ('Validator',)
 
 class ValidatorMeta(type):
 
     def __new__(cls, name, bases, attrs):
         def wrap(f, m):
-            def wrap(*args, **kwargs):
-                if not f(*args, **kwargs):
+            def check(self, value):
+                if not f(value):
                     raise ValidationError(m)
-            return wrap
+            return check
 
         attrs['m'] = attrs.get('__annotations__', {}).get('m', '')
-        attrs['condition'] = wrap(attrs.get('condition', None), attrs['m'])
-        return super().__new__(cls, name, bases, attrs)
+        attrs['check'] = wrap(attrs.get('condition', lambda self, value: ...), attrs['m'])
+        return super().__new__(cls, name, bases, attrs)()
 
 class Validator(metaclass=ValidatorMeta):
-    def __new__(cls, value):
-        return cls.condition(value)
 
+    def __and__(self, other: Validator) -> Validator:
+        this_check = self.check
+        def check(self, value):
+            this_check(value)
+            other.check(value)
+        
+        self = copy(self)
+        return self.swap_check(check)
 
-class ValidatorStore:
-    def __init__(self, *validators):
-        self.validators = validators
+    def __or__(self, other: Validator) -> Validator:
+        this_check = self.check
+        def check(self, value):
+            try:
+                this_check(value)
+            except ValidationError as e:
+                m1 = e.args[0]
+                try:
+                    other.check(value)
+                except ValidationError as e:
+                    m2 = e.args[0]
 
-class AND(ValidatorStore):
+                    message = ' or '.join((m1, m2))
+                    raise ValidationError(message)
+        
+        self = copy(self)
+        return self.swap_check(check)
+
     def __call__(self, value):
-        for v in self.validators:
-            v(value)
+        return self.check(value)
 
-    @property
-    def m(self):
-        return ' and '.join(v.m for v in self.validators)
+    def swap_check(self, check):
+        self.check = MethodType(check, self)
+        return self
 
-class OR(ValidatorStore):
-    def __call__(self, value):
-        for v in self.validators:
-            try: v(value)
-            except AssertionError: ...
-            else: return
-        else:
-            raise ValidationError(f'{" or ".join(v.m for v in self.validators)}')
+Validator = Validator.__class__
