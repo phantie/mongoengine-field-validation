@@ -2,11 +2,11 @@ from __future__ import annotations
 from types import MethodType
 from copy import copy
 
-import mongoengine as me
+from mongoengine import ValidationError
 
-ValidationError = me.ValidationError
 
 __all__ = ('Validator',)
+
 
 class ValidatorMeta(type):
 
@@ -17,11 +17,20 @@ class ValidatorMeta(type):
                     raise ValidationError(m)
             return check
 
-        attrs['m'] = attrs.get('__annotations__', {}).get('m', '')
-        attrs['check'] = wrap(attrs.get('condition', lambda self, value: ...), attrs['m'])
+        attrs['check'] = wrap(attrs['condition'], attrs['__annotations__']['m'])
         return super().__new__(cls, name, bases, attrs)()
 
+def prepare(Validator):
+    Validator = Validator.__class__
+    del Validator.__annotations__
+    del Validator.condition
+    return Validator
+
+@prepare
 class Validator(metaclass=ValidatorMeta):
+    m: 'TEMP'
+    condition = lambda self, value: False
+
 
     def __and__(self, other: Validator) -> Validator:
         this_check = self.check
@@ -36,15 +45,11 @@ class Validator(metaclass=ValidatorMeta):
         def check(self, value):
             try:
                 this_check(value)
-            except ValidationError as e:
-                m1 = e.args[0]
+            except ValidationError as e1:
                 try:
                     other.check(value)
-                except ValidationError as e:
-                    m2 = e.args[0]
-
-                    message = ' or '.join((m1, m2))
-                    raise ValidationError(message)
+                except ValidationError as e2:
+                    raise ValidationError(' or '.join((e1.args[0], e2.args[0])))
 
         return self.with_new_check(check)
 
@@ -55,5 +60,3 @@ class Validator(metaclass=ValidatorMeta):
         self = copy(self)
         self.check = MethodType(check, self)
         return self
-
-Validator = Validator.__class__
