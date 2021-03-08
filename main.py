@@ -29,8 +29,7 @@ class Validator(metaclass=ValidatorMeta):
             this_check(value)
             other.check(value)
         
-        self = copy(self)
-        return self.swap_check(check)
+        return self.with_new_check(check)
 
     def __or__(self, other: Validator) -> Validator:
         this_check = self.check
@@ -46,14 +45,14 @@ class Validator(metaclass=ValidatorMeta):
 
                     message = ' or '.join((m1, m2))
                     raise ValidationError(message)
-        
-        self = copy(self)
-        return self.swap_check(check)
+
+        return self.with_new_check(check)
 
     def __call__(self, value):
         return self.check(value)
 
-    def swap_check(self, check):
+    def with_new_check(self, check):
+        self = copy(self)
         self.check = MethodType(check, self)
         return self
 
