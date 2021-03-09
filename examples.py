@@ -1,5 +1,8 @@
 from main import Validator
 
+from contests import some, every
+# pip install git+https://github.com/phantie/contests.git
+
 from mongoengine import Document, StringField
 
 
@@ -23,11 +26,11 @@ class TitledValidator(Validator):
 
 class CapitalizedValidator(Validator):
     m: 'Must be capitalized'
-    condition = lambda value: all(l.isupper() for l in value)
+    condition = lambda value: every(value).isupper()
 
 class NoNumbersValidator(Validator):
     m: 'Don`t use numbers'
-    condition = lambda value: not any(i.isdigit() for i in value)
+    condition = lambda value: not some(value).isdigit()
 
 class AlphaNumericValidator(Validator):
     m: 'Special symbols not allowed'
@@ -35,11 +38,11 @@ class AlphaNumericValidator(Validator):
 
 class OnlyNumbers(Validator):
     m: 'Use only numbers'
-    condition = lambda value: all(i.isdigit() for i in value)
+    condition = lambda value: every(value).isdigit()
 
 class OnlyAa(Validator):
     m: 'Use only `A` and `a` symbols'
-    condition = lambda value: all(i.lower() == 'a' for i in value)
+    condition = lambda value: every(value.lower()) == 'a'
 
 
 StringTypeValidator = TypeValidator(str)
